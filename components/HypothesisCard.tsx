@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { HypothesisArtifact, MintingStatus } from '../types';
-import { Beaker, Brain, Award, ExternalLink, ShieldCheck, RotateCcw, Link, User, Clock, BadgeCheck, Dna, Sparkles, Copy, Twitter, Mail, Share2, RefreshCw, List } from 'lucide-react';
+import { Beaker, Brain, Award, ExternalLink, ShieldCheck, RotateCcw, Link, User, Clock, BadgeCheck, Dna, Sparkles, Copy, Twitter, Mail, Share2, RefreshCw, List, ArrowRight } from 'lucide-react';
 
 interface HypothesisCardProps {
   artifact: HypothesisArtifact;
@@ -9,9 +9,10 @@ interface HypothesisCardProps {
   onMint: () => void;
   isStandalone?: boolean;
   onCreateAnother?: () => void;
+  onContinue?: () => void; // New prop for navigating to feed
 }
 
-export const HypothesisCard: React.FC<HypothesisCardProps> = ({ artifact, mintingStatus, onMint, isStandalone = false, onCreateAnother }) => {
+export const HypothesisCard: React.FC<HypothesisCardProps> = ({ artifact, mintingStatus, onMint, isStandalone = false, onCreateAnother, onContinue }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [rotate, setRotate] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
@@ -60,20 +61,6 @@ export const HypothesisCard: React.FC<HypothesisCardProps> = ({ artifact, mintin
   };
 
   const scoreColor = getGradient(artifact.confidence.overall);
-
-  // Formatting helpers
-  const getQualityLabel = (score: number) => {
-      if (score >= 90) return "LEGENDARY";
-      if (score >= 75) return "EPIC";
-      if (score >= 50) return "RARE";
-      return "COMMON";
-  };
-  
-  const formatDate = (dateStr: string) => {
-      return new Date(dateStr).toLocaleString('en-US', { 
-          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-      });
-  };
 
   return (
     <div className={`relative w-full max-w-[380px] h-[600px] group perspective-1000 mx-auto ${isStandalone ? 'scale-110 md:scale-125 transition-transform duration-700' : 'my-8'}`}>
@@ -169,7 +156,7 @@ export const HypothesisCard: React.FC<HypothesisCardProps> = ({ artifact, mintin
                         className="absolute top-16 left-0 w-full px-5 animate-in slide-in-from-bottom-8 fade-in duration-700 z-30"
                         onClick={(e) => e.stopPropagation()} // Prevent card flip when interacting with the receipt
                     >
-                        <div className="bg-slate-950/90 backdrop-blur-xl border border-amber-500/30 rounded-2xl overflow-hidden shadow-2xl">
+                        <div className="bg-slate-950/70 backdrop-blur-xl border border-amber-500/30 rounded-2xl overflow-hidden shadow-2xl">
                             
                             {/* Receipt Header */}
                             <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-3 border-b border-white/5 flex items-center justify-center gap-2">
@@ -197,15 +184,15 @@ export const HypothesisCard: React.FC<HypothesisCardProps> = ({ artifact, mintin
                                 {/* Blockchain Details */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-[11px] font-mono">
-                                        <span className="text-slate-500">Transaction</span>
+                                        <span className="text-slate-400">Transaction</span>
                                         <span className="text-slate-300 truncate w-24">{artifact.blockchain?.transactionHash}</span>
                                     </div>
                                     <div className="flex justify-between text-[11px] font-mono">
-                                        <span className="text-slate-500">Block</span>
+                                        <span className="text-slate-400">Block</span>
                                         <span className="text-blue-300">#{artifact.blockchain?.blockNumber.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between text-[11px] font-mono">
-                                        <span className="text-slate-500">Network</span>
+                                        <span className="text-slate-400">Network</span>
                                         <span className="text-emerald-400">Neo N3 Mainnet</span>
                                     </div>
                                 </div>
@@ -229,7 +216,7 @@ export const HypothesisCard: React.FC<HypothesisCardProps> = ({ artifact, mintin
 
                                 {/* Share Section */}
                                 <div className="space-y-2 text-center">
-                                    <div className="text-[10px] text-slate-500 uppercase tracking-widest">Share your discovery</div>
+                                    <div className="text-[10px] text-slate-400 uppercase tracking-widest">Share your discovery</div>
                                     <div className="flex justify-center gap-3">
                                         <button className="p-2 bg-slate-800 rounded-full hover:bg-blue-500 hover:text-white text-slate-400 border border-slate-700 transition-colors">
                                             <Twitter size={14} />
@@ -258,9 +245,17 @@ export const HypothesisCard: React.FC<HypothesisCardProps> = ({ artifact, mintin
                                             <RefreshCw size={10} /> Create Another
                                         </button>
                                     )}
-                                    <button className="text-[10px] text-amber-500 hover:text-amber-400 flex items-center gap-1 transition-colors">
-                                        <List size={10} /> Discovery Feed
-                                    </button>
+                                    {onContinue && (
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onContinue();
+                                            }}
+                                            className="text-[10px] bg-slate-800 hover:bg-slate-700 text-amber-500 px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors border border-slate-700 hover:border-amber-500/30"
+                                        >
+                                            <List size={10} /> Enter Discovery Feed <ArrowRight size={10} />
+                                        </button>
+                                    )}
                                 </div>
 
                             </div>
