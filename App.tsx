@@ -218,7 +218,7 @@ const App: React.FC = () => {
           )}
 
           {appState === AppState.MINT_SUCCESS && artifact && (
-            <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-1000">
+            <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-1000">
                  
                  <div className="absolute top-8 left-8">
                     <button 
@@ -229,7 +229,8 @@ const App: React.FC = () => {
                     </button>
                  </div>
 
-                 <div className="mb-8 text-center animate-in slide-in-from-top-10 duration-700 delay-500">
+                 {/* Added mb-28 to clear the scaled card's top bound */}
+                 <div className="mb-28 text-center animate-in slide-in-from-top-10 duration-700 delay-500 relative z-50">
                      <h2 className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-emerald-400 drop-shadow-lg">
                         ARTIFACT MINTED
                      </h2>
