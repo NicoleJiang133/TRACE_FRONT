@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { AppState, HypothesisArtifact, MintingStatus, SourcePaper } from './types';
 import { generateHypothesis, generateScientificIllustration } from './services/geminiService';
@@ -6,6 +7,7 @@ import { HypothesisCard } from './components/HypothesisCard';
 import { AnalysisVisualization } from './components/AnalysisVisualization';
 import { IsometricAssembly } from './components/IsometricAssembly';
 import { MintCelebration } from './components/MintCelebration';
+import { ArtifactFeed } from './components/ArtifactFeed';
 import { BrainCircuit, Hexagon, ArrowLeft } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -121,6 +123,10 @@ const App: React.FC = () => {
       }, 500);
       
     }, 2000);
+  };
+
+  const handleEnterFeed = () => {
+    setAppState(AppState.FEED);
   };
 
   const handleReset = () => {
@@ -245,9 +251,15 @@ const App: React.FC = () => {
                     onMint={() => {}} 
                     isStandalone={true}
                     onCreateAnother={handleReset}
+                    onContinue={handleEnterFeed}
                  />
             </div>
           )}
+
+          {appState === AppState.FEED && artifact && (
+            <ArtifactFeed newArtifact={artifact} />
+          )}
+
         </main>
       </div>
     </div>

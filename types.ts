@@ -59,4 +59,5 @@ export enum AppState {
   ANALYZING = 'ANALYZING',
   GENERATED = 'GENERATED',
   MINT_SUCCESS = 'MINT_SUCCESS',
+  FEED = 'FEED',
 }
