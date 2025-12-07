@@ -118,12 +118,12 @@ export const IsometricAssembly: React.FC<IsometricAssemblyProps> = ({ step }) =>
 
         {/* Formation Log */}
         <div className="bg-slate-900/80 border border-slate-700 rounded-xl p-3 font-mono text-[10px] text-slate-400 h-32 overflow-hidden flex flex-col justify-end shadow-xl backdrop-blur-sm">
-            <div className="opacity-40 mb-1">> Connecting to Bloxberg chain...</div>
-            {step >= 1 && <div className="opacity-60 mb-1">> Foundation layer established.</div>}
-            {step >= 2 && <div className="opacity-70 mb-1">> Ingesting 14 citations from Paper A...</div>}
-            {step >= 3 && <div className="opacity-80 mb-1 text-purple-300">> Cross-reference check: 89% match.</div>}
-            {step >= 4 && <div className="opacity-90 mb-1 text-emerald-300">> NOVEL INSIGHT DETECTED: Trust Gap Verification.</div>}
-            {step >= 5 && <div className="text-white animate-pulse">> Finalizing Artifact assembly...</div>}
+            <div className="opacity-40 mb-1">&gt; Connecting to Neo N3 chain...</div>
+            {step >= 1 && <div className="opacity-60 mb-1">&gt; Foundation layer established.</div>}
+            {step >= 2 && <div className="opacity-70 mb-1">&gt; Ingesting citations from Paper A...</div>}
+            {step >= 3 && <div className="opacity-80 mb-1 text-purple-300">&gt; Cross-reference check: analyzing synergies...</div>}
+            {step >= 4 && <div className="opacity-90 mb-1 text-emerald-300">&gt; NOVEL INSIGHT DETECTED: Hypothesis Generated.</div>}
+            {step >= 5 && <div className="text-white animate-pulse">&gt; Finalizing Artifact assembly...</div>}
          </div>
 
       </div>

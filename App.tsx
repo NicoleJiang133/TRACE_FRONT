@@ -1,23 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppState, HypothesisArtifact, MintingStatus, SourcePaper } from './types';
 import { generateHypothesis, generateScientificIllustration } from './services/geminiService';
+import { processWithBackend, checkBackendHealth } from './services/traceApiService';
 import { PaperInput } from './components/PaperInput';
 import { HypothesisCard } from './components/HypothesisCard';
 import { AnalysisVisualization } from './components/AnalysisVisualization';
 import { IsometricAssembly } from './components/IsometricAssembly';
 import { MintCelebration } from './components/MintCelebration';
-import { BrainCircuit, Hexagon, ArrowLeft } from 'lucide-react';
+import { BrainCircuit, Hexagon, ArrowLeft, Server, Zap } from 'lucide-react';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.UPLOAD);
   const [mintingStatus, setMintingStatus] = useState<MintingStatus>('idle');
   const [artifact, setArtifact] = useState<HypothesisArtifact | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
-  
+
   // Analysis Visualization State
   const [analysisStep, setAnalysisStep] = useState(0);
   // We keep papers in state to pass to visualization
   const [currentPapers, setCurrentPapers] = useState<SourcePaper[]>([]);
+
+  // Backend connection state
+  const [useBackend, setUseBackend] = useState(true); // Default to backend
+  const [backendAvailable, setBackendAvailable] = useState<boolean | null>(null);
+
+  // Check backend availability on mount
+  useEffect(() => {
+    const checkBackend = async () => {
+      const available = await checkBackendHealth();
+      setBackendAvailable(available);
+      if (!available) {
+        console.warn("Backend not available, will use Gemini fallback");
+      }
+    };
+    checkBackend();
+  }, []);
 
   const handleAnalyze = async (papers: SourcePaper[]) => {
     try {
@@ -25,56 +42,77 @@ const App: React.FC = () => {
       setCurrentPapers(papers);
       setAnalysisStep(0);
       setMintingStatus('idle'); // Reset minting status
-      
+
+      // Determine which backend to use
+      const shouldUseBackend = useBackend && backendAvailable;
+
       // Start the actual API call in the background immediately
-      const hypothesisPromise = generateHypothesis(papers);
-      
+      const hypothesisPromise = shouldUseBackend
+        ? processWithBackend(papers, { useNeofs: true, useX402: false })
+        : generateHypothesis(papers);
+
       // -- ISOMETRIC ASSEMBLY SEQUENCE START --
       // Step 0: Initialization (0-4s)
       await new Promise(r => setTimeout(r, 4000));
-      
+
       // Step 1: Foundation (4-8s)
       setAnalysisStep(1);
       await new Promise(r => setTimeout(r, 4000));
-      
+
       // Step 2: Content Layers (8-12s)
       setAnalysisStep(2);
       await new Promise(r => setTimeout(r, 4000));
-      
+
       // Step 3: Shared Concepts (12-16s)
       setAnalysisStep(3);
       await new Promise(r => setTimeout(r, 4000));
-      
+
       // Step 4: Breakthrough (16-20s)
       setAnalysisStep(4);
       await new Promise(r => setTimeout(r, 4000));
-      
+
       // Step 5: Finalization (20-22s)
       setAnalysisStep(5);
       await new Promise(r => setTimeout(r, 2000));
-      
-      // Now wait for the actual API result if it hasn't finished yet
-      const hypothesisData = await hypothesisPromise;
-      if (!hypothesisData.statement) throw new Error("Failed to generate hypothesis");
-      
-      // Image Generation (can be shown as part of "Synthesizing")
-      const imageUrl = await generateScientificIllustration(hypothesisData.summary || hypothesisData.statement);
-      // -- SEQUENCE END --
 
-      // Construct complete artifact
-      const newArtifact: HypothesisArtifact = {
-        id: Math.floor(Math.random() * 1000) + 100, // Mock ID
-        timestamp: new Date().toISOString(),
-        title: hypothesisData.title || "Untitled Hypothesis",
-        statement: hypothesisData.statement,
-        summary: hypothesisData.summary || "",
-        confidence: hypothesisData.confidence || { overall: 50, novelty: 50, plausibility: 50, testability: 50 },
-        evidence: hypothesisData.evidence || [],
-        noveltyAssessment: hypothesisData.noveltyAssessment || { isNovel: false, reasoning: "N/A" },
-        proposedExperiment: hypothesisData.proposedExperiment || { procedure: [], expectedOutcome: "" },
-        sourcePapers: papers,
-        imageUrl: imageUrl,
-      };
+      // Now wait for the actual API result if it hasn't finished yet
+      const result = await hypothesisPromise;
+
+      let newArtifact: HypothesisArtifact;
+
+      if (shouldUseBackend) {
+        // Backend returns complete artifact with real blockchain data
+        newArtifact = result as HypothesisArtifact;
+        newArtifact.sourcePapers = papers;
+
+        // Generate illustration for the backend result
+        try {
+          const imageUrl = await generateScientificIllustration(newArtifact.summary || newArtifact.statement);
+          newArtifact.imageUrl = imageUrl;
+        } catch (imgError) {
+          console.warn("Image generation failed:", imgError);
+        }
+      } else {
+        // Gemini fallback - construct artifact from partial data
+        const hypothesisData = result as Partial<HypothesisArtifact>;
+        if (!hypothesisData.statement) throw new Error("Failed to generate hypothesis");
+
+        const imageUrl = await generateScientificIllustration(hypothesisData.summary || hypothesisData.statement);
+
+        newArtifact = {
+          id: Math.floor(Math.random() * 1000) + 100,
+          timestamp: new Date().toISOString(),
+          title: hypothesisData.title || "Untitled Hypothesis",
+          statement: hypothesisData.statement,
+          summary: hypothesisData.summary || "",
+          confidence: hypothesisData.confidence || { overall: 50, novelty: 50, plausibility: 50, testability: 50 },
+          evidence: hypothesisData.evidence || [],
+          noveltyAssessment: hypothesisData.noveltyAssessment || { isNovel: false, reasoning: "N/A" },
+          proposedExperiment: hypothesisData.proposedExperiment || { procedure: [], expectedOutcome: "" },
+          sourcePapers: papers,
+          imageUrl: imageUrl,
+        };
+      }
 
       // Slight delay to let the user see the "Synthesis" state (Step 5)
       await new Promise(r => setTimeout(r, 1000));
@@ -84,16 +122,28 @@ const App: React.FC = () => {
     } catch (error) {
       console.error(error);
       setAppState(AppState.UPLOAD);
-      alert("An error occurred during AI analysis. Please check your API key and try again.");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      alert(`Analysis failed: ${errorMessage}`);
     }
   };
 
   const handleMint = async () => {
     if (!artifact) return;
-    
+
+    // If artifact already has blockchain data (from backend), just show success
+    if (artifact.blockchain?.transactionHash) {
+      setShowCelebration(true);
+      setMintingStatus('minted');
+      setTimeout(() => {
+        setAppState(AppState.MINT_SUCCESS);
+        setTimeout(() => setShowCelebration(false), 3500);
+      }, 500);
+      return;
+    }
+
     setMintingStatus('minting');
-    
-    // Simulate Neo Blockchain transaction
+
+    // Simulate Neo Blockchain transaction (fallback for Gemini mode)
     setTimeout(() => {
       setArtifact(prev => {
         if (!prev) return null;
@@ -108,18 +158,18 @@ const App: React.FC = () => {
           }
         };
       });
-      
+
       // Trigger success sequence
       setShowCelebration(true);
       setMintingStatus('minted');
-      
+
       // Transition to final standalone view after celebration start
       setTimeout(() => {
           setAppState(AppState.MINT_SUCCESS);
           // Hide celebration overlay after a few seconds
           setTimeout(() => setShowCelebration(false), 3500);
       }, 500);
-      
+
     }, 2000);
   };
 
@@ -155,12 +205,20 @@ const App: React.FC = () => {
           </div>
           <div className="hidden md:flex items-center gap-4 text-xs font-mono text-slate-500">
             <div className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              Neo N3 Active
+              <span className={`w-2 h-2 rounded-full ${backendAvailable ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></span>
+              Neo N3 {backendAvailable ? 'Active' : 'Simulated'}
+            </div>
+            <div
+              className={`flex items-center gap-1 cursor-pointer px-2 py-1 rounded ${useBackend && backendAvailable ? 'bg-emerald-900/30 text-emerald-400' : 'hover:bg-slate-800'}`}
+              onClick={() => setUseBackend(!useBackend)}
+              title={backendAvailable ? "Click to toggle backend" : "Backend not available"}
+            >
+              <Server size={12} />
+              SpoonOS {backendAvailable === null ? '...' : backendAvailable ? (useBackend ? 'ON' : 'OFF') : 'N/A'}
             </div>
             <div className="flex items-center gap-1">
-              <Hexagon size={12} />
-              Gemini 2.5 Flash
+              <Zap size={12} />
+              {useBackend && backendAvailable ? 'Groq LLM' : 'Gemini'}
             </div>
           </div>
         </header>
